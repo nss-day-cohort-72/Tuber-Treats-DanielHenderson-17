@@ -1,4 +1,5 @@
 using TuberTreats.Models;
+using TuberTreats.Models.DTOs;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,11 +82,54 @@ List<TuberTopping> tuberToppings = new List<TuberTopping>
 };
 
 
+//Get All endpoints
 app.MapGet("/tuberdrivers", () => tuberDrivers);
 app.MapGet("/customers", () => customers);
 app.MapGet("/tubertoppings", () => tuberToppings);
 app.MapGet("/toppings", () => toppings);
 app.MapGet("/tuberorders", () => orders);
+
+
+//Get endpoints
+app.MapGet("/tuberorders/{id}", (int id) =>
+{
+    TuberOrder order = orders.FirstOrDefault(o => o.Id == id);
+    if (order == null)
+    {
+        return Results.NotFound();
+    }
+
+    Customer customer = customers.FirstOrDefault(c => c.Id == order.CustomerId);
+
+    TuberDriver driver = null;
+    if (order.TuberDriverId.HasValue)
+    {
+        driver = tuberDrivers.FirstOrDefault(d => d.Id == order.TuberDriverId.Value);
+    }
+
+    List<Topping> orderToppings = new List<Topping>();
+    foreach (TuberTopping tuberTopping in tuberToppings)
+    {
+        if (tuberTopping.TuberOrderId == order.Id)
+        {
+            Topping topping = toppings.FirstOrDefault(t => t.Id == tuberTopping.ToppingId);
+            if (topping != null)
+            {
+                orderToppings.Add(topping);
+            }
+        }
+    }
+
+    OrderDetailsDTO orderDetails = new OrderDetailsDTO
+    {
+        Order = order,
+        Customer = customer,
+        Driver = driver,
+        Toppings = orderToppings
+    };
+
+    return Results.Ok(orderDetails);
+});
 
 
 
