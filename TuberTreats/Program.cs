@@ -293,4 +293,31 @@ app.MapPut("/tuberorders/{id}", (int id, OrderDriverAssignmentDTO driverAssignme
 });
 
 
+
+
+
+//Delete endpoints
+
+//Remove a topping from a TuberOrder (DELETE to /tuberorders/{id}/toppings/{toppingId})
+app.MapDelete("/tuberorders/{orderId}/toppings/{toppingId}", (int orderId, int toppingId) =>
+{
+    TuberTopping tuberTopping = tuberToppings.FirstOrDefault(tt => tt.TuberOrderId == orderId && tt.ToppingId == toppingId);
+    if (tuberTopping == null)
+    {
+        return Results.NotFound("Topping not found in the specified order");
+    }
+
+    tuberToppings.Remove(tuberTopping);
+
+    TuberToppingDTO deletedToppingDTO = new TuberToppingDTO
+    {
+        Id = tuberTopping.Id,
+        TuberOrderId = tuberTopping.TuberOrderId,
+        ToppingId = tuberTopping.ToppingId
+    };
+
+    return Results.Ok(deletedToppingDTO);
+});
+
+
 app.Run();
