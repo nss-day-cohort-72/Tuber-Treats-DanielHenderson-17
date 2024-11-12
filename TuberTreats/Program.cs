@@ -87,13 +87,10 @@ app.MapGet("/tuberdrivers", () => tuberDrivers);
 app.MapGet("/customers", () => customers);
 app.MapGet("/tubertoppings", () => tuberToppings);
 app.MapGet("/toppings", () => toppings);
-
+app.MapGet("/tuberorders", () => orders);
 
 
 ////Get endpoints
-
-//Get all orders
-app.MapGet("/tuberorders", () => orders);
 
 //Get an order by id (must include customer data as well as driver and toppings data, if applicable).
 app.MapGet("/tuberorders/{id}", (int id) =>
@@ -154,12 +151,88 @@ app.MapGet("/toppings/{id}", (int id) =>
     return Results.Ok(toppingDTO);
 });
 
+//Get a customer by id, with their orders
+app.MapGet("/customers/{id}", (int id) =>
+{
+    Customer customer = customers.FirstOrDefault(c => c.Id == id);
+    if (customer == null)
+    {
+        return Results.NotFound();
+    }
+
+    List<TuberOrderDTO> customerOrders = orders
+        .Where(o => o.CustomerId == id)
+        .Select(o => new TuberOrderDTO
+        {
+            Id = o.Id,
+            OrderPlacedOnDate = o.OrderPlacedOnDate,
+            CustomerId = o.CustomerId,
+            TuberDriverId = o.TuberDriverId,
+            DeliveredOnDate = o.DeliveredOnDate,
+            Toppings = tuberToppings
+                .Where(tt => tt.TuberOrderId == o.Id)
+                .Select(tt => new ToppingDTO
+                {
+                    Id = tt.ToppingId,
+                    Name = toppings.First(t => t.Id == tt.ToppingId).Name
+                })
+                .ToList()
+        })
+        .ToList();
+
+    CustomerWithOrdersDTO customerWithOrders = new CustomerWithOrdersDTO
+    {
+        Id = customer.Id,
+        Name = customer.Name,
+        Address = customer.Address,
+        Orders = customerOrders
+    };
+
+    return Results.Ok(customerWithOrders);
+});
+
+//Get an employee by id with their deliveries
+app.MapGet("/tuberdrivers/{id}", (int id) =>
+{
+    TuberDriver driver = tuberDrivers.FirstOrDefault(d => d.Id == id);
+    if (driver == null)
+    {
+        return Results.NotFound();
+    }
+
+    List<TuberOrderDTO> driverDeliveries = orders
+        .Where(o => o.TuberDriverId == id)
+        .Select(o => new TuberOrderDTO
+        {
+            Id = o.Id,
+            OrderPlacedOnDate = o.OrderPlacedOnDate,
+            CustomerId = o.CustomerId,
+            TuberDriverId = o.TuberDriverId,
+            DeliveredOnDate = o.DeliveredOnDate,
+            Toppings = tuberToppings
+                .Where(tt => tt.TuberOrderId == o.Id)
+                .Select(tt => new ToppingDTO
+                {
+                    Id = tt.ToppingId,
+                    Name = toppings.First(t => t.Id == tt.ToppingId).Name
+                })
+                .ToList()
+        })
+        .ToList();
+
+    DriverWithDeliveriesDTO driverWithDeliveries = new DriverWithDeliveriesDTO
+    {
+        Id = driver.Id,
+        Name = driver.Name,
+        Deliveries = driverDeliveries
+    };
+
+    return Results.Ok(driverWithDeliveries);
+});
 
 
 
-
-
-//Post endpoints
+////Post endpoints
 
 //Submit a new order (the API should add an OrderPlacedOnDate). Return the new order so the client can see the new Id.
 app.MapPost("/tuberorders", (TuberOrderDTO newOrder) =>
@@ -258,6 +331,28 @@ app.MapPost("/tuberorders/{id}/toppings", (int id, int toppingId) =>
     return Results.Ok(tuberToppingDTO);
 });
 
+//Add a Customer (POST to /customers)(return the new customer)
+app.MapPost("/customers", (CustomerDTO newCustomerDTO) =>
+{
+    Customer newCustomer = new Customer
+    {
+        //Here I am using LinQ to get the max id from the customers list and add 1 to it to get the new id
+        Id = customers.Any() ? customers.Max(c => c.Id) + 1 : 1,
+        Name = newCustomerDTO.Name,
+        Address = newCustomerDTO.Address
+    };
+
+    customers.Add(newCustomer);
+
+    CustomerDTO createdCustomerDTO = new CustomerDTO
+    {
+        Id = newCustomer.Id,
+        Name = newCustomer.Name,
+        Address = newCustomer.Address
+    };
+
+    return Results.Ok(createdCustomerDTO);
+});
 
 
 
@@ -296,7 +391,7 @@ app.MapPut("/tuberorders/{id}", (int id, OrderDriverAssignmentDTO driverAssignme
 
 
 
-//Delete endpoints
+////Delete endpoints
 
 //Remove a topping from a TuberOrder (DELETE to /tuberorders/{id}/toppings/{toppingId})
 app.MapDelete("/tuberorders/{orderId}/toppings/{toppingId}", (int orderId, int toppingId) =>
@@ -319,5 +414,25 @@ app.MapDelete("/tuberorders/{orderId}/toppings/{toppingId}", (int orderId, int t
     return Results.Ok(deletedToppingDTO);
 });
 
+//Delete a customer (DELETE to /customers/{id})
+app.MapDelete("/customers/{id}", (int id) =>
+{
+    Customer customer = customers.FirstOrDefault(c => c.Id == id);
+    if (customer == null)
+    {
+        return Results.NotFound();
+    }
+
+    customers.Remove(customer);
+
+    CustomerDTO deletedCustomerDTO = new CustomerDTO
+    {
+        Id = customer.Id,
+        Name = customer.Name,
+        Address = customer.Address
+    };
+
+    return Results.Ok(deletedCustomerDTO);
+});
 
 app.Run();
