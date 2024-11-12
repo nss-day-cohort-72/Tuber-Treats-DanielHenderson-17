@@ -136,6 +136,23 @@ app.MapGet("/tuberorders/{id}", (int id) =>
     return Results.Ok(orderDetails);
 });
 
+//Get topping by id
+app.MapGet("/toppings/{id}", (int id) =>
+{
+    Topping topping = toppings.FirstOrDefault(t => t.Id == id);
+    if (topping == null)
+    {
+        return Results.NotFound();
+    }
+
+    ToppingDTO toppingDTO = new ToppingDTO
+    {
+        Id = topping.Id,
+        Name = topping.Name
+    };
+
+    return Results.Ok(toppingDTO);
+});
 
 
 
