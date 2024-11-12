@@ -224,6 +224,40 @@ app.MapPost("/tuberorders/{id}/complete", (int id) =>
     return Results.Ok(completionDetails);
 });
 
+//Add a topping to a TuberOrder (return the new TuberTopping object to the client)(POST to /tuberorders/{id}/toppings)
+app.MapPost("/tuberorders/{id}/toppings", (int id, int toppingId) =>
+{
+    TuberOrder order = orders.FirstOrDefault(o => o.Id == id);
+    if (order == null)
+    {
+        return Results.NotFound("Order not found");
+    }
+
+    Topping topping = toppings.FirstOrDefault(t => t.Id == toppingId);
+    if (topping == null)
+    {
+        return Results.BadRequest("Topping not found");
+    }
+
+    TuberTopping newTuberTopping = new TuberTopping
+    {
+        Id = tuberToppings.Any() ? tuberToppings.Max(tt => tt.Id) + 1 : 1,
+        TuberOrderId = id,
+        ToppingId = toppingId
+    };
+
+    tuberToppings.Add(newTuberTopping);
+
+    TuberToppingDTO tuberToppingDTO = new TuberToppingDTO
+    {
+        Id = newTuberTopping.Id,
+        TuberOrderId = newTuberTopping.TuberOrderId,
+        ToppingId = newTuberTopping.ToppingId
+    };
+
+    return Results.Ok(tuberToppingDTO);
+});
+
 
 
 
