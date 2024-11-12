@@ -80,4 +80,13 @@ List<TuberTopping> tuberToppings = new List<TuberTopping>
     new TuberTopping { Id = 6, TuberOrderId = 3, ToppingId = 5 }
 };
 
+
+app.MapGet("/tuberdrivers", () => tuberDrivers);
+app.MapGet("/customers", () => customers);
+app.MapGet("/tubertoppings", () => tuberToppings);
+app.MapGet("/toppings", () => toppings);
+app.MapGet("/tuberorders", () => orders);
+
+
+
 app.Run();
